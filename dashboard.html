@@ -105,7 +105,7 @@
 const sesion = requireAuth();
 document.getElementById('sessionUser').textContent = sesion?.nombre ?? '';
 
-const TARGET = new Set(Object.keys(PAISES).map(id => parseInt(id, 10)));
+const TARGET = new Set(Object.keys(PAISES));
 let allData  = {};
 let mapReady = false;
 
@@ -205,9 +205,11 @@ async function buildMap() {
   /* océano */
   svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#04101f');
 
+  const tgtId = d => TARGET.has(String(d.id).padStart(3,'0'));
+
   /* países de fondo (no objetivo) */
   svg.append('g').selectAll('path.bg')
-    .data(countries.features.filter(d => !TARGET.has(d.id)))
+    .data(countries.features.filter(d => !tgtId(d)))
     .join('path').attr('class', 'bg')
     .attr('d', path)
     .attr('fill', '#0d1e2f')
@@ -216,7 +218,7 @@ async function buildMap() {
 
   /* países objetivo */
   svg.append('g').selectAll('path.tgt')
-    .data(countries.features.filter(d => TARGET.has(d.id)))
+    .data(countries.features.filter(d => tgtId(d)))
     .join('path').attr('class', 'tgt')
     .attr('d', path)
     .attr('cursor', 'pointer')
