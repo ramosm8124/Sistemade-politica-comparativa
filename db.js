@@ -65,20 +65,31 @@ async function dbGet(id) {
   return _lsGetAll()[id] ?? null;
 }
 
-/* ── SAVE (upsert) ── */
+/* ── SAVE (patch → insert) ── */
 async function dbSave(id, data) {
   if (_useCloud) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=pais_id`, {
+    const ts = new Date().toISOString();
+
+    // Intenta actualizar primero
+    const patch = await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE}?pais_id=eq.${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        headers: _headers({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify({ datos: data, updated_at: ts })
+      }
+    );
+    const updated = await patch.json();
+    if (Array.isArray(updated) && updated.length > 0) return;
+
+    // Si no existía, inserta
+    const insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
       method: 'POST',
-      headers: _headers({ 'Prefer': 'resolution=merge-duplicates,return=representation' }),
-      body: JSON.stringify({
-        pais_id: id,
-        datos: data,
-        updated_at: new Date().toISOString()
-      })
+      headers: _headers({ 'Prefer': 'return=representation' }),
+      body: JSON.stringify({ pais_id: id, datos: data, updated_at: ts })
     });
-    if (!r.ok) {
-      const err = await r.text();
+    if (!insert.ok) {
+      const err = await insert.text();
       throw new Error(err);
     }
     return;
