@@ -68,7 +68,7 @@ async function dbGet(id) {
 /* ── SAVE (upsert) ── */
 async function dbSave(id, data) {
   if (_useCloud) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=pais_id`, {
       method: 'POST',
       headers: _headers({ 'Prefer': 'resolution=merge-duplicates,return=representation' }),
       body: JSON.stringify({
