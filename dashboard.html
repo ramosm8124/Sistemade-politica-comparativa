@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Política Comparada</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="hdr-left">
+    <div class="hdr-logo">🗺️</div>
+    <div>
+      <div class="hdr-name">Política Comparada</div>
+      <div class="hdr-sub">Latinoamérica &amp; España · Metodología Sartori</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="sync-pill local" id="syncPill">
+      <span id="syncDot">●</span>
+      <span id="syncTxt">Modo local</span>
+    </div>
+    <span class="hdr-user">Bienvenido, <b id="sessionUser"></b></span>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</header>
+
+<div class="dash-wrap">
+
+  <!-- ── Mapa ── -->
+  <div class="map-section" id="mapSection">
+    <div class="map-overlay">
+      <h2>Latinoamérica &amp; España</h2>
+      <div class="map-legend">
+        <span class="leg"><span class="leg-swatch none"></span>Sin datos</span>
+        <span class="leg"><span class="leg-swatch done"></span>Registrado</span>
+      </div>
+    </div>
+
+    <!-- Stats flotantes -->
+    <div class="map-stats">
+      <div class="stat-card">
+        <div class="stat-val green" id="sDone">0</div>
+        <div class="stat-lbl">completados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="sPend">24</div>
+        <div class="stat-lbl">pendientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="sPct">0%</div>
+        <div class="stat-lbl">progreso</div>
+      </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="map-tip" id="mapTip">
+      <div class="tip-name" id="tipName"></div>
+      <div class="tip-status" id="tipStatus"></div>
+      <div class="tip-action">Clic para abrir ficha →</div>
+    </div>
+
+    <!-- Cargando -->
+    <div class="map-loading" id="mapLoad">
+      <div class="spinner"></div>
+      <span>Cargando mapa…</span>
+    </div>
+
+    <svg id="map-svg"></svg>
+  </div>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="sb-label">Países del estudio</div>
+      <div class="sb-progress-row">
+        <span class="sb-prog-text">Progreso del equipo</span>
+        <span class="sb-prog-count" id="sbCount">0 / 24</span>
+      </div>
+      <div class="sb-bar">
+        <div class="sb-fill" id="sbFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="sb-actions">
+      <button class="sb-btn exp" onclick="handleExport()">⬇ Exportar JSON</button>
+      <button class="sb-btn imp" onclick="document.getElementById('fileIn').click()">⬆ Importar</button>
+      <input type="file" id="fileIn" accept=".json" style="display:none">
+    </div>
+
+    <div class="sb-search">
+      <input type="text" id="sbSearch" placeholder="🔍  Buscar país…">
+    </div>
+
+    <div class="country-list" id="countryList"></div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+const sesion = requireAuth();
+document.getElementById('sessionUser').textContent = sesion?.nombre ?? '';
+
+const TARGET = new Set(Object.keys(PAISES).map(id => parseInt(id, 10)));
+let allData  = {};
+let mapReady = false;
+
+/* ── Inicialización ── */
+async function init() {
+  const cloud = await initDB();
+  const pill  = document.getElementById('syncPill');
+  const txt   = document.getElementById('syncTxt');
+  if (cloud) {
+    pill.className = 'sync-pill cloud';
+    txt.textContent = 'Firebase · tiempo real';
+    dbOnChange(async () => { allData = await dbGetAll(); refresh(); repaintMap(); });
+  }
+  allData = await dbGetAll();
+  refresh();
+  await buildMap();
+}
+
+/* ── Sidebar + stats ── */
+function refresh(filter = '') {
+  const total = Object.keys(PAISES).length;
+  const done  = Object.keys(PAISES).filter(id => allData[id]?._meta?.completo).length;
+  const pct   = Math.round(done / total * 100);
+
+  document.getElementById('sDone').textContent  = done;
+  document.getElementById('sPend').textContent  = total - done;
+  document.getElementById('sPct').textContent   = pct + '%';
+  document.getElementById('sbCount').textContent = `${done} / ${total}`;
+  document.getElementById('sbFill').style.width  = pct + '%';
+
+  const list = document.getElementById('countryList');
+  list.innerHTML = '';
+  Object.entries(PAISES)
+    .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre, 'es'))
+    .filter(([, p]) => !filter || p.nombre.toLowerCase().includes(filter.toLowerCase()))
+    .forEach(([id, p]) => {
+      const ok = !!(allData[id]?._meta?.completo);
+      const el = document.createElement('div');
+      el.className = 'c-item' + (ok ? ' done' : '');
+      el.innerHTML = `
+        <span class="c-dot ${ok ? 'done' : 'none'}"></span>
+        <span class="c-flag">${p.emoji}</span>
+        <span class="c-name">${p.nombre}</span>
+        <span class="c-badge ${ok ? 'done' : 'none'}">${ok ? '✓' : '—'}</span>`;
+      el.addEventListener('click', () => { window.location.href = `pais.html?id=${id}`; });
+      list.appendChild(el);
+    });
+}
+
+/* ── Mapa D3 ── */
+function repaintMap() {
+  if (!mapReady) return;
+  d3.select('#map-svg').selectAll('path.tgt').each(function(d) {
+    const id = String(d.id).padStart(3, '0');
+    const ok = !!(allData[id]?._meta?.completo);
+    d3.select(this)
+      .attr('fill',   ok ? '#064e3b' : '#1c2d3f')
+      .attr('stroke', ok ? '#10b981' : '#2d4a63')
+      .attr('stroke-width', ok ? 1 : .6);
+  });
+}
+
+async function buildMap() {
+  const sec = document.getElementById('mapSection');
+  const W   = sec.clientWidth  || 900;
+  const H   = sec.clientHeight || 600;
+
+  const svg = d3.select('#map-svg')
+    .attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet');
+
+  const bounds = {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[[-122, 56], [16, 56], [16, -58], [-122, -58], [-122, 56]]]
+    }
+  };
+  const proj = d3.geoMercator().fitExtent([[20, 24], [W - 20, H - 24]], bounds);
+  const path = d3.geoPath().projection(proj);
+
+  let world;
+  try {
+    world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+  } catch {
+    document.getElementById('mapLoad').innerHTML =
+      `<span style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;line-height:2">
+        ⚠️ No se pudo cargar el mapa.<br>Revisa tu conexión a internet.</span>`;
+    return;
+  }
+  document.getElementById('mapLoad').style.display = 'none';
+
+  const countries = topojson.feature(world, world.objects.countries);
+  const tip = document.getElementById('mapTip');
+  const sec2 = document.getElementById('mapSection');
+
+  /* océano */
+  svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#04101f');
+
+  /* países de fondo (no objetivo) */
+  svg.append('g').selectAll('path.bg')
+    .data(countries.features.filter(d => !TARGET.has(d.id)))
+    .join('path').attr('class', 'bg')
+    .attr('d', path)
+    .attr('fill', '#0d1e2f')
+    .attr('stroke', '#132236')
+    .attr('stroke-width', .3);
+
+  /* países objetivo */
+  svg.append('g').selectAll('path.tgt')
+    .data(countries.features.filter(d => TARGET.has(d.id)))
+    .join('path').attr('class', 'tgt')
+    .attr('d', path)
+    .attr('cursor', 'pointer')
+    .on('mousemove', function(ev, d) {
+      const id  = String(d.id).padStart(3, '0');
+      const p   = PAISES[id]; if (!p) return;
+      const ok  = !!(allData[id]?._meta?.completo);
+      const meta = allData[id]?._meta;
+      document.getElementById('tipName').textContent = `${p.emoji}  ${p.nombre}`;
+      document.getElementById('tipStatus').innerHTML = ok
+        ? `✅ <span>Editado por ${meta.editadoPor} · ${formatFecha(meta.fecha)}</span>`
+        : `○ <span>Sin datos registrados</span>`;
+      const r = sec2.getBoundingClientRect();
+      const tx = Math.min(ev.clientX - r.left + 14, W - 185);
+      const ty = Math.max(ev.clientY - r.top  - 55, 6);
+      Object.assign(tip.style, { display: 'block', left: tx + 'px', top: ty + 'px' });
+      d3.select(this).attr('opacity', .7);
+    })
+    .on('mouseleave', function() {
+      tip.style.display = 'none';
+      d3.select(this).attr('opacity', 1);
+    })
+    .on('click', (ev, d) => {
+      const id = String(d.id).padStart(3, '0');
+      if (PAISES[id]) window.location.href = `pais.html?id=${id}`;
+    });
+
+  mapReady = true;
+  repaintMap();
+}
+
+document.getElementById('sbSearch').addEventListener('input', e => refresh(e.target.value));
+
+async function handleExport() {
+  await dbExport();
+  showToast('Archivo JSON descargado ✓', 'ok');
+}
+
+document.getElementById('fileIn').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const n = await dbImport(f);
+    allData  = await dbGetAll();
+    refresh(); repaintMap();
+    showToast(`${n} países importados correctamente`, 'ok');
+  } catch { showToast('Archivo inválido', 'err'); }
+  e.target.value = '';
+});
+
+window.addEventListener('focus', async () => {
+  if (!isCloud()) { allData = await dbGetAll(); refresh(); repaintMap(); }
+});
+
+init();
+</script>
+</body>
+</html>

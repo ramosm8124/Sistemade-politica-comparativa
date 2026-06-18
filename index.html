@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política Comparada — Acceso</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="login-page">
+
+  <!-- Panel izquierdo: branding académico -->
+  <div class="login-left">
+    <div class="ll-chip">🎓 Proyecto de investigación</div>
+    <h2>Estudio de<br><span>Política</span><br>Comparada</h2>
+    <p>
+      Análisis comparativo de los sistemas constitucionales de
+      Latinoamérica y España, aplicando la metodología científica
+      de Giovanni Sartori.
+    </p>
+    <div class="ll-books">
+      <div class="ll-book">
+        <div class="ll-book-icon">📘</div>
+        <div class="ll-book-text">
+          <strong>Ingeniería Constitucional Comparada</strong>
+          <span>Sartori, G. (1994) — FCE</span>
+        </div>
+      </div>
+      <div class="ll-book">
+        <div class="ll-book-icon">📗</div>
+        <div class="ll-book-text">
+          <strong>La Comparación en las Ciencias Sociales</strong>
+          <span>Sartori, G. &amp; Morlino, L. (1994) — Alianza Editorial</span>
+        </div>
+      </div>
+    </div>
+    <div class="ll-deco"></div>
+  </div>
+
+  <!-- Panel derecho: formulario de acceso -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+      <div class="lf-header">
+        <h3>Iniciar sesión</h3>
+        <p>Ingresa con tus credenciales de investigador</p>
+      </div>
+
+      <form id="loginForm" novalidate autocomplete="off">
+        <div class="field">
+          <label for="username">Usuario</label>
+          <input type="text" id="username" placeholder="Ej: estudiante1" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-login">
+          Ingresar al sistema →
+        </button>
+        <div class="login-err" id="loginErr"></div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (getSesion()) window.location.href = 'dashboard.html';
+
+document.getElementById('loginForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value;
+    const err  = document.getElementById('loginErr');
+    if (!user || !pass) { err.innerHTML = '⚠️ Completa los dos campos.'; return; }
+    const s = login(user, pass);
+    if (s) {
+      document.querySelector('.btn-login').textContent = '✓ Redirigiendo…';
+      window.location.href = 'dashboard.html';
+    } else {
+      err.innerHTML = '⚠️ Usuario o contraseña incorrectos.';
+      document.getElementById('password').value = '';
+    }
+  });
+</script>
+</body>
+</html>

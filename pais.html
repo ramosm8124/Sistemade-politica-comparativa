@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha de País — Política Comparada</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="hdr-left">
+    <div class="hdr-logo">🗺️</div>
+    <div>
+      <div class="hdr-name">Política Comparada</div>
+      <div class="hdr-sub">Ficha de país · Metodología Sartori</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="hdr-user">Sesión: <b id="sessionUser"></b></span>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</header>
+
+<div class="pais-wrap">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb">
+    <a href="dashboard.html">← Volver al mapa</a>
+    <span class="sep">/</span>
+    <span id="bcName" style="color:var(--gray-700);font-weight:500">—</span>
+  </div>
+
+  <!-- Hero del país -->
+  <div class="pais-hero">
+    <div class="hero-flag" id="hFlag">🌐</div>
+    <div class="hero-info">
+      <h2 id="hNombre">Cargando…</h2>
+      <div class="hero-tags" id="hTags"></div>
+    </div>
+    <!-- Ring de completitud -->
+    <div class="hero-ring">
+      <div style="position:relative;width:64px;height:64px">
+        <svg class="ring-svg" width="64" height="64" viewBox="0 0 64 64">
+          <circle class="ring-bg" cx="32" cy="32" r="26"/>
+          <circle class="ring-fg" id="ringFg" cx="32" cy="32" r="26"
+            stroke-dasharray="163.4" stroke-dashoffset="163.4"/>
+        </svg>
+        <div class="ring-text" id="ringPct">0%</div>
+      </div>
+      <div class="ring-label">completado</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       FORMULARIO
+  ══════════════════════════════════════════ -->
+  <form id="paisForm" novalidate>
+  <div class="accordion">
+
+    <!-- I · DATOS GENERALES -->
+    <div class="acc" id="s1">
+      <div class="acc-hdr" onclick="tog('s1')">
+        <div class="acc-icon">I</div>
+        <div class="acc-meta">
+          <h3>Datos Generales</h3>
+          <p>Identificación básica del caso</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev open" id="chev-s1">▾</span>
+        </div>
+      </div>
+      <div class="acc-body open" id="body-s1">
+        <div class="sub">
+          <div class="sub-t">Fechas clave</div>
+          <div class="inline2">
+            <div class="fgroup">
+              <label class="lbl">Año constitución vigente</label>
+              <input class="finput" type="number" name="anio_const" min="1800" max="2025" placeholder="ej. 1991">
+            </div>
+            <div class="fgroup">
+              <label class="lbl">Año último cambio de régimen</label>
+              <input class="finput" type="number" name="anio_regimen" min="1800" max="2025" placeholder="ej. 1990">
+            </div>
+            <div class="fgroup">
+              <label class="lbl">Últimas elecciones presidenciales</label>
+              <input class="finput" type="number" name="anio_elec" min="1900" max="2025" placeholder="ej. 2023">
+            </div>
+            <div class="fgroup">
+              <label class="lbl">Investigador responsable</label>
+              <input class="finput" type="text" name="investigador" id="fInvestigador" readonly>
+            </div>
+          </div>
+        </div>
+        <div class="sub">
+          <div class="sub-t">Rol en el diseño comparativo</div>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="rol_caso" value="principal"> Caso principal del análisis</label>
+            <label class="ropt"><input type="radio" name="rol_caso" value="comparado"> Caso de comparación</label>
+            <label class="ropt"><input type="radio" name="rol_caso" value="control"> Caso control</label>
+            <label class="ropt"><input type="radio" name="rol_caso" value="desviante"> Caso desviante</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- II · INGENIERÍA CONSTITUCIONAL -->
+    <div class="acc" id="s2">
+      <div class="acc-hdr" onclick="tog('s2')">
+        <div class="acc-icon">II</div>
+        <div class="acc-meta">
+          <h3>Ingeniería Constitucional</h3>
+          <p>Sartori (1994) · Caps. I–IV — Forma de gobierno, ejecutivo, legislativo, territorio</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-s2">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-s2">
+
+        <div class="sub">
+          <div class="sub-t">A · Forma de Gobierno</div>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="forma_gob" value="presidencialismo">
+              <span><strong>Presidencialismo</strong> — Jefe de Estado elegido popularmente, mandato fijo, no removible por el legislativo</span></label>
+            <label class="ropt"><input type="radio" name="forma_gob" value="semipresidencialismo">
+              <span><strong>Semi-presidencialismo</strong> (Duverger) — Presidente electo + Primer Ministro responsable ante el parlamento</span></label>
+            <label class="ropt"><input type="radio" name="forma_gob" value="parlamentarismo">
+              <span><strong>Parlamentarismo</strong> — Ejecutivo surge y responde ante el legislativo; Jefe de Estado separado del gobierno</span></label>
+            <label class="ropt"><input type="radio" name="forma_gob" value="pres_parlamentarizado">
+              <span><strong>Presidencialismo parlamentarizado</strong> — Presidencialismo con rasgos parlamentarios relevantes</span></label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">B · Ejecutivo y Reelección</div>
+          <label class="lbl">Tipo de ejecutivo</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="ejec_tipo" value="unitario"> Unitario (un solo jefe)</label>
+            <label class="ropt"><input type="radio" name="ejec_tipo" value="dual"> Dual (Jefe Estado ≠ Jefe Gobierno)</label>
+            <label class="ropt"><input type="radio" name="ejec_tipo" value="colegiado"> Ejecutivo colegiado</label>
+            <label class="ropt"><input type="radio" name="ejec_tipo" value="na"> No aplica / En transición</label>
+          </div>
+          <label class="lbl">Reelección presidencial</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="reeleccion" value="libre"> Reelección ilimitada</label>
+            <label class="ropt"><input type="radio" name="reeleccion" value="limite"> Con límite de mandatos</label>
+            <label class="ropt"><input type="radio" name="reeleccion" value="alterna"> Alterna / diferida</label>
+            <label class="ropt"><input type="radio" name="reeleccion" value="prohibida"> Prohibición absoluta</label>
+            <label class="ropt"><input type="radio" name="reeleccion" value="na_re"> No aplica (parlamentarismo)</label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">C · Legislativo y Territorio</div>
+          <label class="lbl">Tipo de asamblea legislativa</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="legislativo" value="unicameral"> Unicameral</label>
+            <label class="ropt"><input type="radio" name="legislativo" value="bic_sim"> Bicameral simétrico (igual poder)</label>
+            <label class="ropt"><input type="radio" name="legislativo" value="bic_asim"> Bicameral asimétrico (cámara baja dominante)</label>
+            <label class="ropt"><input type="radio" name="legislativo" value="otro"> Otro / En revisión</label>
+          </div>
+          <label class="lbl">Organización territorial del Estado</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="territorio" value="unit_central"> Unitario centralizado</label>
+            <label class="ropt"><input type="radio" name="territorio" value="unit_desc"> Unitario descentralizado</label>
+            <label class="ropt"><input type="radio" name="territorio" value="federal"> Federal</label>
+            <label class="ropt"><input type="radio" name="territorio" value="regional"> Regional / autonómico</label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">D · Control de Constitucionalidad</div>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="ctrl_const" value="concentrado"> Concentrado — Tribunal/Corte Constitucional (modelo kelseniano)</label>
+            <label class="ropt"><input type="radio" name="ctrl_const" value="difuso"> Difuso — todos los jueces (modelo americano)</label>
+            <label class="ropt"><input type="radio" name="ctrl_const" value="mixto"> Mixto (concentrado + difuso)</label>
+            <label class="ropt"><input type="radio" name="ctrl_const" value="sin"> Sin control efectivo</label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- III · SISTEMA ELECTORAL -->
+    <div class="acc" id="s3">
+      <div class="acc-hdr" onclick="tog('s3')">
+        <div class="acc-icon">III</div>
+        <div class="acc-meta">
+          <h3>Sistema Electoral</h3>
+          <p>Sartori (1994) · Caps. V–IX — Ingeniería electoral, fórmulas y parámetros técnicos</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-s3">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-s3">
+
+        <div class="sub">
+          <div class="sub-t">A · Sistema Presidencial</div>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="se_pres" value="may_rel"> Mayoría relativa (plurality)</label>
+            <label class="ropt"><input type="radio" name="se_pres" value="doble_vuelta"> Mayoría absoluta — doble vuelta</label>
+            <label class="ropt"><input type="radio" name="se_pres" value="umbral_min"> Mayoría con umbral mínimo</label>
+            <label class="ropt"><input type="radio" name="se_pres" value="colegio"> Colegio electoral</label>
+            <label class="ropt"><input type="radio" name="se_pres" value="na_ep"> No aplica (parlamentarismo)</label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">B · Sistema Legislativo</div>
+          <label class="lbl">Fórmula principal</label>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="se_leg" value="rp_lista"> Representación proporcional por lista</label>
+            <label class="ropt"><input type="radio" name="se_leg" value="rp_svt"> RP — voto único transferible (STV)</label>
+            <label class="ropt"><input type="radio" name="se_leg" value="fptp"> Mayoritario uninominal (FPTP)</label>
+            <label class="ropt"><input type="radio" name="se_leg" value="may_dv"> Mayoritario — doble vuelta</label>
+            <label class="ropt"><input type="radio" name="se_leg" value="mixto_par"> Mixto paralelo (no compensatorio)</label>
+            <label class="ropt"><input type="radio" name="se_leg" value="mixto_comp"> Mixto compensatorio (modelo alemán)</label>
+          </div>
+          <label class="lbl">Fórmula de conversión votos → escaños</label>
+          <div class="rgrid c3">
+            <label class="ropt"><input type="radio" name="formula" value="dhondt"> D'Hondt</label>
+            <label class="ropt"><input type="radio" name="formula" value="sainte_lague"> Sainte-Laguë</label>
+            <label class="ropt"><input type="radio" name="formula" value="hare"> Hare / Cuota</label>
+            <label class="ropt"><input type="radio" name="formula" value="droop"> Droop</label>
+            <label class="ropt"><input type="radio" name="formula" value="mayoritaria"> Mayoría simple</label>
+            <label class="ropt"><input type="radio" name="formula" value="otra"> Otra</label>
+          </div>
+          <label class="lbl">Tipo de lista electoral</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="tipo_lista" value="cerr_bloq"> Cerrada y bloqueada (orden fijo)</label>
+            <label class="ropt"><input type="radio" name="tipo_lista" value="cerr_desbloq"> Cerrada desbloqueada (preferencias)</label>
+            <label class="ropt"><input type="radio" name="tipo_lista" value="abierta"> Lista abierta</label>
+            <label class="ropt"><input type="radio" name="tipo_lista" value="na_lista"> Uninominal / No aplica</label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">C · Parámetros Técnicos</div>
+          <div class="inline2">
+            <div class="fgroup">
+              <label class="lbl">Umbral electoral legal</label>
+              <div class="unit-wrap">
+                <input class="finput" type="number" name="umbral" min="0" max="50" step="0.1" placeholder="ej. 3">
+                <span class="unit">% de votos</span>
+              </div>
+            </div>
+            <div class="fgroup">
+              <label class="lbl">Magnitud de distrito promedio</label>
+              <select class="finput" name="magnitud">
+                <option value="">— Seleccionar —</option>
+                <option value="1">1 escaño (uninominal)</option>
+                <option value="2-5">2 a 5 escaños</option>
+                <option value="6-10">6 a 10 escaños</option>
+                <option value="11-20">11 a 20 escaños</option>
+                <option value="21+">Más de 20 escaños</option>
+                <option value="nacional">Circunscripción nacional única</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">D · Representación de Minorías e Indígenas</div>
+          <label class="lbl">Mecanismo de representación especial</label>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="rep_minoria" value="escanos_reservados">
+              <span><strong>Escaños reservados</strong> — Cupo fijo de bancas exclusivo para indígenas/minorías en la legislatura</span></label>
+            <label class="ropt"><input type="radio" name="rep_minoria" value="circunscripcion_especial">
+              <span><strong>Circunscripción especial</strong> — Distrito electoral propio (ej. Bolivia, Venezuela, Colombia)</span></label>
+            <label class="ropt"><input type="radio" name="rep_minoria" value="cuota_legal">
+              <span><strong>Cuota legal obligatoria</strong> — Los partidos deben incluir candidatos indígenas/minorías en sus listas</span></label>
+            <label class="ropt"><input type="radio" name="rep_minoria" value="autonomia_territorial">
+              <span><strong>Autonomía territorial</strong> — Circunscripciones indígenas con autogobierno reconocido</span></label>
+            <label class="ropt"><input type="radio" name="rep_minoria" value="parlamento_indigena">
+              <span><strong>Parlamento indígena / tercera cámara</strong> — Cuerpo legislativo propio o cámara adicional exclusiva para pueblos indígenas</span></label>
+            <label class="ropt"><input type="radio" name="rep_minoria" value="sin_mecanismo">
+              <span><strong>Sin mecanismo especial</strong> — Representación solo a través del sistema electoral general</span></label>
+          </div>
+          <div class="fgroup" style="margin-top:.75rem">
+            <label class="lbl">Notas (organismos, leyes, grupos representados)</label>
+            <textarea class="finput" name="rep_minoria_notas" rows="2" placeholder="ej. Circunscripciones especiales indígenas en Bolivia (Ley 026), siete escaños reservados en Colombia…"></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- IV · ÓRGANO ELECTORAL Y JUSTICIA ELECTORAL -->
+    <div class="acc" id="sOE">
+      <div class="acc-hdr" onclick="tog('sOE')">
+        <div class="acc-icon">IV</div>
+        <div class="acc-meta">
+          <h3>Órgano Electoral y Justicia Electoral</h3>
+          <p>Diseño institucional del organismo electoral y del sistema de resolución de conflictos electorales</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-sOE">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-sOE">
+
+        <div class="sub">
+          <div class="sub-t">A · Órgano Electoral (EMB)</div>
+          <label class="lbl">Tipo y autonomía del organismo electoral</label>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="organo_tipo" value="independiente">
+              <span><strong>Independiente / autónomo</strong> — Organismo constitucional propio, sin dependencia del ejecutivo ni el legislativo</span></label>
+            <label class="ropt"><input type="radio" name="organo_tipo" value="gubernamental">
+              <span><strong>Dependiente del ejecutivo</strong> — Bajo el Ministerio del Interior u organismo gubernamental</span></label>
+            <label class="ropt"><input type="radio" name="organo_tipo" value="mixto">
+              <span><strong>Mixto</strong> — Composición que combina representantes del gobierno, partidos y/o sociedad civil</span></label>
+            <label class="ropt"><input type="radio" name="organo_tipo" value="tribunal_especial">
+              <span><strong>Tribunal Electoral especializado</strong> — Órgano con funciones jurisdiccionales y administrativas unificadas</span></label>
+          </div>
+          <label class="lbl">Forma de designación de sus integrantes</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="organo_designacion" value="legislativo"> Nombrados por el legislativo</label>
+            <label class="ropt"><input type="radio" name="organo_designacion" value="ejecutivo"> Nombrados por el ejecutivo</label>
+            <label class="ropt"><input type="radio" name="organo_designacion" value="judicial"> Propuestos por el poder judicial</label>
+            <label class="ropt"><input type="radio" name="organo_designacion" value="mixta_designacion"> Designación mixta / concurso</label>
+          </div>
+          <div class="fgroup" style="margin-top:.75rem">
+            <label class="lbl">Nombre oficial del organismo en este país</label>
+            <input class="finput" type="text" name="organo_nombre" placeholder="ej. Tribunal Supremo Electoral, Instituto Nacional Electoral, Jurado Nacional de Elecciones…">
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">B · Justicia Electoral</div>
+          <label class="lbl">¿Existe una justicia electoral especializada?</label>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="justicia_electoral" value="tribunal_autonomo">
+              <span><strong>Tribunal Electoral autónomo</strong> — Órgano jurisdiccional electoral separado del poder judicial ordinario</span></label>
+            <label class="ropt"><input type="radio" name="justicia_electoral" value="sala_especializada">
+              <span><strong>Sala especializada</strong> — Cámara o sala electoral dentro del poder judicial (ej. Sala Electoral del TSJ)</span></label>
+            <label class="ropt"><input type="radio" name="justicia_electoral" value="mismo_organo">
+              <span><strong>Misma institución electoral</strong> — El propio órgano administrativo también resuelve conflictos (funciones unificadas)</span></label>
+            <label class="ropt"><input type="radio" name="justicia_electoral" value="justicia_ordinaria_exc">
+              <span><strong>Solo justicia ordinaria</strong> — Los conflictos electorales los resuelven los tribunales comunes</span></label>
+          </div>
+          <label class="lbl">¿Existe un Código Electoral separado?</label>
+          <div class="rgrid c3">
+            <label class="ropt"><input type="radio" name="codigo_electoral" value="si"> Sí — código propio</label>
+            <label class="ropt"><input type="radio" name="codigo_electoral" value="parcial"> Parcial / leyes dispersas</label>
+            <label class="ropt"><input type="radio" name="codigo_electoral" value="no"> No — regulado en Constitución o ley general</label>
+          </div>
+          <label class="lbl">Intervención de la justicia ordinaria en materia electoral</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="justicia_ordinaria_rol" value="prohibida"> Prohibida — fuero electoral exclusivo</label>
+            <label class="ropt"><input type="radio" name="justicia_ordinaria_rol" value="limitada"> Limitada — solo en casos específicos</label>
+            <label class="ropt"><input type="radio" name="justicia_ordinaria_rol" value="si_puede"> Puede intervenir libremente</label>
+            <label class="ropt"><input type="radio" name="justicia_ordinaria_rol" value="es_la_principal"> Es la principal instancia electoral</label>
+          </div>
+          <label class="lbl">Última instancia en disputas electorales</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="ultima_instancia" value="tribunal_electoral"> Tribunal / Sala Electoral</label>
+            <label class="ropt"><input type="radio" name="ultima_instancia" value="corte_suprema"> Corte Suprema / Corte Constitucional</label>
+            <label class="ropt"><input type="radio" name="ultima_instancia" value="organo_admin"> El propio órgano electoral administrativo</label>
+            <label class="ropt"><input type="radio" name="ultima_instancia" value="legislativo_ult"> Asamblea Legislativa / Congreso</label>
+          </div>
+          <label class="lbl">Estructura territorial del órgano de justicia electoral</label>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="justicia_estructura" value="centralizado">
+              <span><strong>Centralizado</strong> — Una sola instancia nacional; sin delegaciones territoriales propias</span></label>
+            <label class="ropt"><input type="radio" name="justicia_estructura" value="desc_admin">
+              <span><strong>Descentralizado administrativamente</strong> — Tiene delegaciones o tribunales subnacionales, pero dependen del órgano central en presupuesto</span></label>
+            <label class="ropt"><input type="radio" name="justicia_estructura" value="desc_admin_fin">
+              <span><strong>Descentralizado administrativa y financieramente</strong> — Las instancias subnacionales tienen autonomía de gestión y presupuesto propio</span></label>
+            <label class="ropt"><input type="radio" name="justicia_estructura" value="federal_autonomo">
+              <span><strong>Federal / autónomo por estado</strong> — Cada entidad federativa o región tiene su propio órgano de justicia electoral independiente</span></label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- V · SISTEMA DE PARTIDOS -->
+    <div class="acc" id="s4">
+      <div class="acc-hdr" onclick="tog('s4')">
+        <div class="acc-icon">V</div>
+        <div class="acc-meta">
+          <h3>Sistema de Partidos</h3>
+          <p>Sartori (1976) · <em>Parties and Party Systems</em> — Tipología y dinámica competitiva</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-s4">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-s4">
+
+        <div class="sub">
+          <div class="sub-t">A · Tipología Sartori (1976)</div>
+          <p class="f-note">Clasificación según nº de partidos <em>relevantes</em> (potencial de coalición o chantaje) y la distancia ideológica</p>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="partido_unico">
+              <span><strong>Partido único</strong> — Solo existe un partido legal; sin competencia electoral</span></label>
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="hegemonico">
+              <span><strong>Partido hegemónico</strong> — Un partido dominante permanente; otros partidos son satélites tolerados</span></label>
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="predominante">
+              <span><strong>Partido predominante</strong> — Un partido gana mayorías absolutas consecutivas en competencia real</span></label>
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="bipartidismo">
+              <span><strong>Bipartidismo</strong> — Dos partidos mayoritarios alternan el poder; terceros partidos son irrelevantes</span></label>
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="plur_limitado">
+              <span><strong>Pluralismo limitado</strong> — 3 a 5 partidos relevantes; polarización moderada, dinámica centrípeta</span></label>
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="plur_extremo">
+              <span><strong>Pluralismo extremo / polarizado</strong> — Más de 5 partidos relevantes; alta polarización, dinámica centrífuga</span></label>
+            <label class="ropt"><input type="radio" name="tipo_partidos" value="atomizacion">
+              <span><strong>Atomización</strong> — Fragmentación extrema sin partidos claramente relevantes</span></label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">B · Indicadores de Fragmentación</div>
+          <div class="inline2">
+            <div class="fgroup">
+              <label class="lbl">NEPE — Nº efectivo de partidos electorales</label>
+              <input class="finput" type="number" name="nepe" min="1" max="20" step="0.1" placeholder="ej. 3.2">
+            </div>
+            <div class="fgroup">
+              <label class="lbl">NEPP — Nº efectivo de partidos parlamentarios</label>
+              <input class="finput" type="number" name="nepp" min="1" max="20" step="0.1" placeholder="ej. 2.8">
+            </div>
+          </div>
+          <p class="f-note" style="margin-top:.5rem">Fórmula Laakso-Taagepera: NEPP = 1 / Σ(pᵢ²), donde pᵢ = proporción de escaños del partido i</p>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">C · Dinámica de Competencia</div>
+          <label class="lbl">Patrón de competencia (Sartori)</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="patron" value="centripeto"> Centrípeto — hacia el centro</label>
+            <label class="ropt"><input type="radio" name="patron" value="centrifugo"> Centrífugo — hacia los extremos</label>
+            <label class="ropt"><input type="radio" name="patron" value="sin_patron"> Sin patrón definido</label>
+          </div>
+          <label class="lbl">Distancia ideológica (polarización)</label>
+          <div class="rgrid c3">
+            <label class="ropt"><input type="radio" name="polarizacion" value="baja"> Baja — convergencia centrista</label>
+            <label class="ropt"><input type="radio" name="polarizacion" value="media"> Media — diferencias moderadas</label>
+            <label class="ropt"><input type="radio" name="polarizacion" value="alta"> Alta — extremos ideológicos</label>
+          </div>
+          <label class="lbl">Tipo de oposición</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="oposicion" value="leal"> Leal / responsable (pro-sistema)</label>
+            <label class="ropt"><input type="radio" name="oposicion" value="semileal"> Semileal</label>
+            <label class="ropt"><input type="radio" name="oposicion" value="desleal"> Desleal / antisistema</label>
+            <label class="ropt"><input type="radio" name="oposicion" value="sin"> Sin oposición relevante</label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">D · Registro y Organización Partidaria</div>
+          <label class="lbl">¿Existen agrupaciones ciudadanas (sin ser partido formal)?</label>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="agrupaciones_ciudadanas" value="si_plenas">
+              <span><strong>Sí, con plenos derechos</strong> — Pueden presentar candidatos con los mismos derechos que un partido</span></label>
+            <label class="ropt"><input type="radio" name="agrupaciones_ciudadanas" value="si_limitadas">
+              <span><strong>Sí, con derechos limitados</strong> — Existen pero con restricciones (ej. solo elecciones locales o con más requisitos)</span></label>
+            <label class="ropt"><input type="radio" name="agrupaciones_ciudadanas" value="no">
+              <span><strong>No</strong> — Solo los partidos políticos formalmente registrados pueden presentar candidatos</span></label>
+          </div>
+          <label class="lbl">¿Se requiere militancia para registrar un partido?</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="militancia_requerida" value="si_firmas"> Sí — requiere un mínimo de afiliados/firmas</label>
+            <label class="ropt"><input type="radio" name="militancia_requerida" value="si_territorial"> Sí — y con presencia territorial mínima</label>
+            <label class="ropt"><input type="radio" name="militancia_requerida" value="no"> No — registro por otros medios</label>
+          </div>
+          <label class="lbl">¿Deben obtener un umbral de votos para mantener el registro?</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="umbral_registro" value="si_3"> Sí — umbral del 3% o similar</label>
+            <label class="ropt"><input type="radio" name="umbral_registro" value="si_otro"> Sí — umbral diferente al 3%</label>
+            <label class="ropt"><input type="radio" name="umbral_registro" value="no_umbral"> No hay umbral de permanencia</label>
+          </div>
+          <label class="lbl">¿Puede un no militante ser candidato por un partido?</label>
+          <div class="rgrid">
+            <label class="ropt"><input type="radio" name="candidato_externo" value="si_libre"> Sí, libremente — los partidos eligen a quien quieran</label>
+            <label class="ropt"><input type="radio" name="candidato_externo" value="si_restricciones"> Sí, con restricciones — requiere aval o período previo</label>
+            <label class="ropt"><input type="radio" name="candidato_externo" value="no_ext"> No — solo los militantes afiliados pueden ser candidatos</label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VI · RÉGIMEN POLÍTICO -->
+    <div class="acc" id="s5">
+      <div class="acc-hdr" onclick="tog('s5')">
+        <div class="acc-icon">VI</div>
+        <div class="acc-meta">
+          <h3>Régimen Político</h3>
+          <p>Clasificación del régimen y calidad democrática e institucional</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-s5">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-s5">
+        <div class="sub">
+          <div class="sub-t">A · Clasificación del Régimen</div>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="regimen" value="dem_consol"> <span><strong>Democracia consolidada</strong> — Instituciones estables, alternancia normalizada</span></label>
+            <label class="ropt"><input type="radio" name="regimen" value="dem_en_consol"> <span><strong>Democracia en consolidación</strong> — Instituciones funcionales pero frágiles</span></label>
+            <label class="ropt"><input type="radio" name="regimen" value="dem_electoral"> <span><strong>Democracia electoral deficitaria</strong> — Elecciones formales con graves deficiencias</span></label>
+            <label class="ropt"><input type="radio" name="regimen" value="hibrido"> <span><strong>Régimen híbrido</strong> — Mezcla de elementos democráticos y autoritarios</span></label>
+            <label class="ropt"><input type="radio" name="regimen" value="aut_competitivo"> <span><strong>Autoritarismo competitivo</strong> — Elecciones con campo de juego muy desigual (Levitsky &amp; Way)</span></label>
+            <label class="ropt"><input type="radio" name="regimen" value="aut_cerrado"> <span><strong>Autoritarismo cerrado</strong> — Sin elecciones competitivas; control total del poder</span></label>
+          </div>
+        </div>
+        <div class="sub">
+          <div class="sub-t">B · Calidad Institucional</div>
+          <div class="inline2">
+            <div>
+              <label class="lbl">Estado de Derecho</label>
+              <div class="rgrid c1">
+                <label class="ropt"><input type="radio" name="edo_derecho" value="pleno"> Pleno</label>
+                <label class="ropt"><input type="radio" name="edo_derecho" value="parcial"> Parcial</label>
+                <label class="ropt"><input type="radio" name="edo_derecho" value="debil"> Débil</label>
+                <label class="ropt"><input type="radio" name="edo_derecho" value="inexistente"> Inexistente</label>
+              </div>
+            </div>
+            <div>
+              <label class="lbl">Independencia Judicial</label>
+              <div class="rgrid c1">
+                <label class="ropt"><input type="radio" name="ind_judicial" value="alta"> Alta</label>
+                <label class="ropt"><input type="radio" name="ind_judicial" value="media"> Media</label>
+                <label class="ropt"><input type="radio" name="ind_judicial" value="baja"> Baja</label>
+                <label class="ropt"><input type="radio" name="ind_judicial" value="nula"> Nula</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VII · METODOLOGÍA COMPARADA -->
+    <div class="acc" id="s6">
+      <div class="acc-hdr" onclick="tog('s6')">
+        <div class="acc-icon">VII</div>
+        <div class="acc-meta">
+          <h3>Metodología Comparada</h3>
+          <p>Sartori &amp; Morlino (1994) · <em>La Comparación en las Ciencias Sociales</em> — Escalera de abstracción y diseño</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-s6">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-s6">
+
+        <div class="sub">
+          <div class="sub-t">A · Estrategia de Comparación</div>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="estrategia" value="mssd">
+              <span><strong>MSSD</strong> — Most Similar Systems Design: casos con máximas similitudes para aislar las diferencias explicativas</span></label>
+            <label class="ropt"><input type="radio" name="estrategia" value="mdsd">
+              <span><strong>MDSD</strong> — Most Different Systems Design: casos muy distintos que comparten el mismo resultado</span></label>
+            <label class="ropt"><input type="radio" name="estrategia" value="caso_comp">
+              <span><strong>Estudio de caso comparado</strong> — Análisis profundo con referencia explícita a otros casos</span></label>
+            <label class="ropt"><input type="radio" name="estrategia" value="binaria">
+              <span><strong>Comparación binaria</strong> — Cotejo directo entre dos casos</span></label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">B · Escalera de Abstracción (Sartori 1970)</div>
+          <p class="f-note">A mayor universalidad → mayor abstracción → menor especificidad empírica</p>
+          <div class="rgrid c1">
+            <label class="ropt"><input type="radio" name="abstraccion" value="alto">
+              <span><strong>Alto</strong> — Conceptos aplicables a cualquier sistema político sin importar región o época</span></label>
+            <label class="ropt"><input type="radio" name="abstraccion" value="medio">
+              <span><strong>Medio</strong> — Conceptos válidos para una familia de países con características comunes</span></label>
+            <label class="ropt"><input type="radio" name="abstraccion" value="bajo">
+              <span><strong>Bajo</strong> (configurativo-descriptivo) — Conceptos específicos del caso; validez limitada a este país</span></label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">C · Estiramiento Conceptual</div>
+          <div class="rgrid c3">
+            <label class="ropt"><input type="radio" name="stretching" value="bajo"> Bajo — bien aplicados</label>
+            <label class="ropt"><input type="radio" name="stretching" value="medio"> Medio — ajustes menores</label>
+            <label class="ropt"><input type="radio" name="stretching" value="alto"> Alto — redefinición necesaria</label>
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-t">D · Variables del Análisis</div>
+          <div class="fgroup">
+            <label class="lbl">Variables independientes principales</label>
+            <textarea class="finput" name="vars_ind" rows="3" placeholder="ej. Sistema electoral, forma de gobierno, fragmentación partidaria…"></textarea>
+          </div>
+          <div class="fgroup">
+            <label class="lbl">Variables dependientes principales</label>
+            <textarea class="finput" name="vars_dep" rows="3" placeholder="ej. Estabilidad democrática, eficacia gubernamental, representación…"></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIII · OBSERVACIONES -->
+    <div class="acc" id="s7">
+      <div class="acc-hdr" onclick="tog('s7')">
+        <div class="acc-icon">VIII</div>
+        <div class="acc-meta">
+          <h3>Observaciones y Fuentes</h3>
+          <p>Notas del investigador, hallazgos relevantes y bibliografía utilizada</p>
+        </div>
+        <div class="acc-right">
+          <span class="acc-badge">✓ Completado</span>
+          <span class="acc-chev" id="chev-s7">▾</span>
+        </div>
+      </div>
+      <div class="acc-body" id="body-s7">
+        <div class="sub">
+          <div class="fgroup">
+            <label class="lbl">Notas del investigador</label>
+            <textarea class="finput" name="notas" rows="5"
+              placeholder="Observaciones, particularidades, anomalías respecto a la tipología de Sartori, contexto histórico relevante…"></textarea>
+          </div>
+          <div class="fgroup" style="margin-top:.75rem">
+            <label class="lbl">Fuentes y referencias bibliográficas</label>
+            <textarea class="finput" name="fuentes" rows="4"
+              placeholder="Constitución, artículos académicos, V-Dem, Freedom House, IDEA Internacional…"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /accordion -->
+
+  <!-- Barra de acciones sticky -->
+  <div class="form-actions">
+    <div class="fa-left">
+      <a href="dashboard.html" class="btn-back">← Mapa</a>
+      <button type="button" class="btn-del" onclick="handleClear()">🗑 Limpiar datos</button>
+    </div>
+    <div class="fa-right">
+      <button type="submit" class="btn-save" id="btnSave">💾 Guardar ficha</button>
+    </div>
+  </div>
+
+  </form>
+</div><!-- /pais-wrap -->
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+/* ── Auth ── */
+const sesion = requireAuth();
+document.getElementById('sessionUser').textContent = sesion?.nombre ?? '';
+
+/* ── País ── */
+const params = new URLSearchParams(window.location.search);
+const paisId = params.get('id');
+if (!paisId || !PAISES[paisId]) window.location.href = 'dashboard.html';
+const pais = PAISES[paisId];
+
+document.title = `${pais.nombre} — Política Comparada`;
+document.getElementById('bcName').textContent       = pais.nombre;
+document.getElementById('hFlag').textContent         = pais.emoji;
+document.getElementById('hNombre').textContent       = pais.nombre;
+document.getElementById('fInvestigador').value       = sesion.nombre;
+
+/* ── Acordeón ── */
+function tog(id) {
+  const body = document.getElementById('body-' + id);
+  const chev = document.getElementById('chev-' + id);
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+/* ── Radios: estilo checked ── */
+document.querySelectorAll('.ropt input[type="radio"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll(`input[name="${r.name}"]`).forEach(x =>
+      x.closest('.ropt').classList.toggle('checked', x.checked));
+    updateRing();
+    markFilled(r.closest('.acc'));
+  });
+});
+document.querySelectorAll('.finput:not([type="radio"])').forEach(el => {
+  el.addEventListener('input', () => {
+    updateRing();
+    markFilled(el.closest('.acc'));
+  });
+});
+
+/* ── Sección "filled" ── */
+function markFilled(card) {
+  if (!card) return;
+  const hasData = card.querySelector('input[type="radio"]:checked') ||
+    [...card.querySelectorAll('input:not([type="radio"]),select,textarea')].some(e => e.value?.trim() && !e.readOnly);
+  card.classList.toggle('filled', !!hasData);
+}
+
+/* ── Ring de completitud ── */
+const CLAVES = ['forma_gob','ejec_tipo','reeleccion','legislativo','territorio',
+                'ctrl_const','se_leg','rep_minoria',
+                'organo_tipo','justicia_electoral','codigo_electoral','ultima_instancia','justicia_estructura',
+                'tipo_partidos','agrupaciones_ciudadanas','militancia_requerida','candidato_externo',
+                'patron','polarizacion','regimen','edo_derecho','estrategia','abstraccion'];
+const CIRCUM = 163.4; // 2π * 26
+
+function updateRing() {
+  const done = CLAVES.filter(n => document.querySelector(`[name="${n}"]:checked`)).length;
+  const pct  = Math.round(done / CLAVES.length * 100);
+  const offset = CIRCUM - (pct / 100) * CIRCUM;
+  document.getElementById('ringFg').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = pct + '%';
+}
+
+/* ── Tags del hero ── */
+function renderTags(data) {
+  const el = document.getElementById('hTags');
+  el.innerHTML = '';
+  if (data?._meta) {
+    el.innerHTML += `<span class="hero-tag ok">✓ Registrado</span>`;
+    el.innerHTML += `<span class="hero-tag usr">👤 ${data._meta.editadoPor}</span>`;
+    el.innerHTML += `<span class="hero-tag">🕐 ${formatFecha(data._meta.fecha)}</span>`;
+  } else {
+    el.innerHTML = `<span class="hero-tag">Sin datos — completa la ficha</span>`;
+  }
+}
+
+/* ── Cargar datos ── */
+async function loadData() {
+  await initDB();
+  const data = await dbGet(paisId);
+  if (!data) { renderTags(null); return; }
+
+  Object.entries(data).forEach(([name, val]) => {
+    if (name === '_meta') return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    if (el.type === 'radio') {
+      const t = document.querySelector(`[name="${name}"][value="${val}"]`);
+      if (t) { t.checked = true; t.closest('.ropt').classList.add('checked'); }
+    } else { el.value = val; }
+  });
+
+  document.querySelectorAll('.acc').forEach(markFilled);
+  updateRing();
+  renderTags(data);
+}
+
+/* ── Guardar ── */
+document.getElementById('paisForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  const out = {};
+  document.querySelectorAll('#paisForm [name]').forEach(el => {
+    if (el.name === 'investigador') return;
+    if (el.type === 'radio') { if (el.checked) out[el.name] = el.value; }
+    else if (el.value?.trim()) out[el.name] = el.value.trim();
+  });
+  out._meta = { completo: true, editadoPor: sesion.nombre, fecha: new Date().toISOString() };
+
+  try {
+    await dbSave(paisId, out);
+    document.querySelectorAll('.acc').forEach(markFilled);
+    renderTags(out);
+    showToast('✓ Ficha guardada correctamente', 'ok');
+  } catch (err) {
+    showToast('Error al guardar: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Guardar ficha';
+  }
+});
+
+/* ── Limpiar ── */
+async function handleClear() {
+  if (!confirm(`¿Borrar todos los datos de ${pais.nombre}?`)) return;
+  await dbDelete(paisId);
+  document.getElementById('paisForm').reset();
+  document.getElementById('fInvestigador').value = sesion.nombre;
+  document.querySelectorAll('.ropt').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.acc').forEach(el => el.classList.remove('filled'));
+  updateRing();
+  renderTags(null);
+  showToast('Datos eliminados', 'err');
+}
+
+loadData();
+</script>
+</body>
+</html>
