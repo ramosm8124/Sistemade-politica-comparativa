@@ -1,99 +1,131 @@
-/*  db.js — Capa de base de datos
-    Si Firebase está configurado → Firestore (compartido entre todos)
-    Si no → localStorage (solo local, modo sin conexión)              */
+/* ══════════════════════════════════════════════════
+   db.js — Supabase + localStorage fallback
+   ══════════════════════════════════════════════════ */
 
-let _db        = null;
-let _useCloud  = false;
-let _dbReady   = false;
+const SUPABASE_URL = 'https://wswftfvnuepspvtyymrf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indzd2Z0ZnZudWVwc3B2dHl5bXJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDM0ODUsImV4cCI6MjA5NzMxOTQ4NX0.xa7lDUsTBJK0toe5DV5WPl2y24A1EuQ6tFR34GdO1lI';
+const TABLE      = 'paises';
+const LS_KEY     = 'polComp_v2';
 
-const LOCAL_KEY = 'polComp_v2';
+let _useCloud = false;
 
 async function initDB() {
   try {
-    const cfg = window.FIREBASE_CONFIG;
-    if (cfg && cfg.apiKey && cfg.apiKey !== 'SIN_CONFIGURAR') {
-      firebase.initializeApp(cfg);
-      _db       = firebase.firestore();
-      _useCloud = true;
-      _dbReady  = true;
-      // Test de conexión rápido
-      await _db.collection('_ping').doc('ok').set({ ts: Date.now() });
-      console.log('%c[DB] Firebase conectado ✓', 'color:#34d399;font-weight:bold');
-    } else {
-      _dbReady = true;
-      console.log('%c[DB] Modo local (localStorage)', 'color:#fbbf24;font-weight:bold');
-    }
-  } catch (e) {
-    _useCloud = false;
-    _dbReady  = true;
-    console.warn('[DB] Firebase falló, usando localStorage:', e.message);
-  }
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?limit=1`, {
+      headers: _headers()
+    });
+    if (r.ok) { _useCloud = true; }
+  } catch (_) { _useCloud = false; }
   return _useCloud;
 }
 
 function isCloud() { return _useCloud; }
 
-// ── CRUD de países ────────────────────────────────────
+function _headers(extra = {}) {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    ...extra
+  };
+}
 
+/* ── localStorage helpers ── */
+function _lsGetAll() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
+}
+function _lsSet(all) { localStorage.setItem(LS_KEY, JSON.stringify(all)); }
+
+/* ── GET ALL ── */
 async function dbGetAll() {
   if (_useCloud) {
-    const snap = await _db.collection('paises').get();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=pais_id,datos`, {
+      headers: _headers()
+    });
+    if (!r.ok) return {};
+    const rows = await r.json();
     const out = {};
-    snap.forEach(d => { out[d.id] = d.data(); });
+    rows.forEach(row => { out[row.pais_id] = row.datos; });
     return out;
   }
-  return JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+  return _lsGetAll();
 }
 
+/* ── GET ONE ── */
 async function dbGet(id) {
   if (_useCloud) {
-    const d = await _db.collection('paises').doc(String(id)).get();
-    return d.exists ? d.data() : null;
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE}?pais_id=eq.${encodeURIComponent(id)}&select=datos`,
+      { headers: _headers() }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0]?.datos ?? null;
   }
-  return (JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'))[id] || null;
+  return _lsGetAll()[id] ?? null;
 }
 
+/* ── SAVE (upsert) ── */
 async function dbSave(id, data) {
   if (_useCloud) {
-    await _db.collection('paises').doc(String(id)).set(data);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+      method: 'POST',
+      headers: _headers({ 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+      body: JSON.stringify({
+        pais_id: id,
+        datos: data,
+        updated_at: new Date().toISOString()
+      })
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      throw new Error(err);
+    }
     return;
   }
-  const all = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+  const all = _lsGetAll();
   all[id] = data;
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(all));
+  _lsSet(all);
 }
 
+/* ── DELETE ── */
 async function dbDelete(id) {
   if (_useCloud) {
-    await _db.collection('paises').doc(String(id)).delete();
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE}?pais_id=eq.${encodeURIComponent(id)}`,
+      { method: 'DELETE', headers: _headers() }
+    );
     return;
   }
-  const all = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+  const all = _lsGetAll();
   delete all[id];
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(all));
+  _lsSet(all);
 }
 
+/* ── EXPORT ── */
 async function dbExport() {
-  const all = await dbGetAll();
-  const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
-  const a    = Object.assign(document.createElement('a'), {
-    href:     URL.createObjectURL(blob),
-    download: `politica_comparada_${new Date().toISOString().slice(0,10)}.json`
-  });
+  const data = await dbGetAll();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `politica-comparada-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
-  URL.revokeObjectURL(a.href);
 }
 
+/* ── IMPORT ── */
 async function dbImport(file) {
   const text = await file.text();
   const data = JSON.parse(text);
-  const ids  = Object.keys(data);
-  for (const id of ids) await dbSave(id, data[id]);
-  return ids.length;
+  let count = 0;
+  for (const [id, val] of Object.entries(data)) {
+    await dbSave(id, val);
+    count++;
+  }
+  return count;
 }
 
-// ── Suscripción en tiempo real (solo con Firebase) ───
+/* ── REALTIME (polling cada 15s si es cloud) ── */
 function dbOnChange(callback) {
-  if (!_useCloud) return () => {};
-  return _db.collection('paises').onSnapshot(() => callback());
+  if (!_useCloud) return;
+  setInterval(callback, 15000);
 }

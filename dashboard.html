@@ -99,9 +99,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
@@ -119,7 +116,7 @@ async function init() {
   const txt   = document.getElementById('syncTxt');
   if (cloud) {
     pill.className = 'sync-pill cloud';
-    txt.textContent = 'Firebase · tiempo real';
+    txt.textContent = 'Supabase · en línea';
     dbOnChange(async () => { allData = await dbGetAll(); refresh(); repaintMap(); });
   }
   allData = await dbGetAll();
